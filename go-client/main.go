@@ -56,7 +56,11 @@ func main() {
 		return
 	}
 	//login
-	fmt.Fprintf(conn, fmt.Sprintf("login %s %s\n", user, pass))
+	_, err = fmt.Fprintf(conn, fmt.Sprintf("login %s %s\n", user, pass))
+	if err != nil {
+		fmt.Printf("could not write to connection %v\n", err)
+		return
+	}
 	for {
 		//read
 		message, err := bufio.NewReader(conn).ReadString('\n')
@@ -77,6 +81,13 @@ func main() {
 		if err != nil {
 			fmt.Printf("could not unmarshall data %v\n", err)
 		}
-		fmt.Printf("game state: %+v\n", gameData)
+	}
+}
+
+func sendGameCommand(conn net.Conn, source int, target int, fleet []int) {
+	_, err := fmt.Fprintf(conn, fmt.Sprintf("send %d %d %d %d %d\n", source, target, fleet[0], fleet[1], fleet[2]))
+	if err != nil {
+		fmt.Printf("could not write to connection %v\n", err)
+		return
 	}
 }
