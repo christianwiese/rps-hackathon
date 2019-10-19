@@ -49,15 +49,14 @@ func (g *Game) score() int {
 	}
 	score := 0
 	myId, otherId := getIDs(g.Players)
-	for _, p := range g.Planets {
-		var mult = 0
-		if p.OwnerID == otherId {
-			mult = -1
-		} else if p.OwnerID == myId {
-			mult = 1
-		}
-		score += (p.Production[0] + p.Production[1] + p.Production[2]) * mult
+
+	for _, planet := range getPlanets(myId, g.Planets) {
+		score += (planet.Production[0] + planet.Production[1] + planet.Production[2])
 	}
+	for _, planet := range getPlanets(otherId, g.Planets) {
+		score -= (planet.Production[0] + planet.Production[1] + planet.Production[2])
+	}
+
 	return score
 }
 
