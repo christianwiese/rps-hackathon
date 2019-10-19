@@ -61,22 +61,23 @@ func (g *Game) score() int {
 	return score
 }
 
-func (g *Game) nearestNeutral() (int, int) {
+func (g *Game) nearestNeutral() (*Planet, *Planet) {
 	myId, _ := getIDs(g.Players)
-	src, dst, mind := -1, -1, 1000000000
+	var src, dst *Planet
+	mind := 1000000000
 	for _, p := range g.Planets {
 		if p.OwnerID != myId {
 			continue
 		}
 		for _, p2 := range g.Planets {
-			if p2.OwnerID != 0 {
+			if p2.OwnerID == myId {
 				continue
 			}
 			d := distance(p, p2)
 			if d < mind {
 				mind = d
-				src = p.Id
-				dst = p2.Id
+				src = &p
+				dst = &p2
 			}
 		}
 	}
