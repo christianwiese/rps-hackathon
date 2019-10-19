@@ -83,8 +83,8 @@ func main() {
 		}
 		//fmt.Printf("game state: %+v", gameData)
 		////////////////
-		myID := getMyID(gameData.Players)
-		fmt.Println(myID)
+		myID, theirID := getIDs(gameData.Players)
+		fmt.Println(myID, theirID)
 	}
 }
 
@@ -96,9 +96,9 @@ func sendGameCommand(conn net.Conn, source int, target int, fleet []int) {
 	}
 }
 
-func getMyID(players []Player) int {
+func getIDs(players []Player) (int, int) {
 	if players[0].Itsme {
-		return players[0].Id
+		return players[0].Id, players[1].Id
 	}
-	return players[1].Id
+	return players[1].Id, players[0].Id
 }
