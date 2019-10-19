@@ -114,7 +114,7 @@ func fight(_att [3]int, _def [3]int) int {
 	for {
 		s1 := att[0] + att[1] + att[2]
 		s2 := def[0] + def[1] + def[2]
-		fmt.Println("fighting...", s1, s2)
+		//fmt.Println("fighting...", s1, s2)
 		if s1 <= 0 || s2 <= 0 {
 			return int(s1 - s2)
 		}
@@ -172,6 +172,7 @@ func (g *Game) bestAction() *action {
 			}
 			d := distance(p1, p2)
 			sc := fight(p1.Ships, p2.getShipsAfter(d))
+			//fmt.Println("score", sc)
 			actions = append(actions, action{
 				score:  sc,
 				source: p1.Id,
@@ -182,7 +183,7 @@ func (g *Game) bestAction() *action {
 			})
 		}
 	}
-	var action action
+	action := action{score: -1000000000}
 	for _, a := range actions {
 		if a.score > action.score {
 			action = a
@@ -248,8 +249,9 @@ func main() {
 			}
 
 			action := g.bestAction()
+			//fmt.Println("best action", action)
 
-			if action.score <= 0 {
+			if action.score <= -100000000 {
 				sendNOP()
 				continue
 			}
@@ -261,7 +263,7 @@ func main() {
 
 func sendGameCommand(source, target, fleet0, fleet1, fleet2 int) {
 	command := fmt.Sprintf("send %d %d %d %d %d\n", source, target, fleet0, fleet1, fleet2)
-	//fmt.Println(command)
+	fmt.Println(command)
 	_, err := fmt.Fprintf(conn, command)
 	if err != nil {
 		fmt.Printf("could not write to connection %v\n", err)
