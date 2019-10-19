@@ -100,6 +100,9 @@ func (g *Game) nearestPlanet() (int, int) {
 }
 
 func (p *Planet) getShipsAfter(time int) [3]int {
+	if p.OwnerID == 0 {
+		return p.Ships
+	}
 	return [3]int{
 		p.Ships[0] + time*p.Production[0],
 		p.Ships[1] + time*p.Production[1],
@@ -248,7 +251,7 @@ func main() {
 				fmt.Printf("could not unmarshall data %v\n", err)
 			}
 
-			action := g.bestAction()
+			action := g.cwBestAction()
 			//fmt.Println("best action", action)
 
 			if action.score <= -10 {
