@@ -121,3 +121,13 @@ func getIDs(players []Player) (int, int) {
 	}
 	return players[1].Id, players[0].Id
 }
+
+func getPlanets(playerID int, planets []Planet) []Planet {
+	res := make([]Planet, 0)
+	for _, planet := range planets {
+		if planet.OwnerID == playerID {
+			res = append(res, planet)
+		}
+	}
+	return res
+}
