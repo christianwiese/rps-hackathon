@@ -8,15 +8,16 @@ import (
 	"math"
 	"net"
 	"os"
+	"strings"
 )
 
 type Fleet struct {
-	Id      int   `json:"id"`
-	OwnerID int   `json:"owner_id"`
-	Origin  int   `json:"origin"`
-	Target  int   `json:"target"`
+	Id      int    `json:"id"`
+	OwnerID int    `json:"owner_id"`
+	Origin  int    `json:"origin"`
+	Target  int    `json:"target"`
 	Ships   [3]int `json:"ships"`
-	Eta     int   `json:"eta"`
+	Eta     int    `json:"eta"`
 }
 
 type Player struct {
@@ -26,10 +27,10 @@ type Player struct {
 }
 
 type Planet struct {
-	Id         int   `json:"id"`
-	OwnerID    int   `json:"owner_id"`
-	X          int   `json:"x"`
-	Y          int   `json:"y"`
+	Id         int    `json:"id"`
+	OwnerID    int    `json:"owner_id"`
+	X          int    `json:"x"`
+	Y          int    `json:"y"`
 	Ships      [3]int `json:"ships"`
 	Production [3]int `json:"production"`
 }
@@ -64,6 +65,7 @@ func (g *Game) score() int {
 }
 
 type byScore []action
+
 func (a byScore) Len() int           { return len(a) }
 func (a byScore) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 func (a byScore) Less(i, j int) bool { return a[i].score < a[j].score }
@@ -77,28 +79,21 @@ type action struct {
 	fleet2 int
 }
 
-func (g *Game) biggestPlanet() (int, int) {
-	return 0, 0
-}
-
 func (g *Game) nearestPlanet() (int, int) {
 	myId, _ := g.getIDs()
+	biggest, _ := g.biggestOwnPlanet()
 	var src, dst = -1, -1
 	mind := 1000000000
-	for _, p := range g.Planets {
-		if p.OwnerID != myId {
+
+	for _, p2 := range g.Planets {
+		if p2.OwnerID == myId {
 			continue
 		}
-		for _, p2 := range g.Planets {
-			if p2.OwnerID == myId {
-				continue
-			}
-			d := distance(p, p2)
-			if d < mind {
-				mind = d
-				src = p.Id
-				dst = p2.Id
-			}
+		d := distance(*g.getPlanetByID(biggest), p2)
+		if d < mind {
+			mind = d
+			src = biggest
+			dst = p2.Id
 		}
 	}
 	return src, dst
@@ -210,52 +205,63 @@ func main() {
 		return
 	}
 
-	var err error
-	conn, err = net.Dial("tcp", "rps.vhenne.de:6000")
-	if err != nil {
-		fmt.Printf("could not connect to server %v\n", err)
-		return
-	}
-	//login
-	_, err = fmt.Fprintf(conn, "login %s %s\n", args[0], args[1])
-	if err != nil {
-		fmt.Printf("could not write to connection %v\n", err)
-		return
-	}
-	reader := bufio.NewReader(conn)
+	var game int
 	for {
-		//read
-		message, err := reader.ReadString('\n')
-		if err == io.EOF {
+		game++
+		fmt.Printf("starting game %d\n", game)
+		var err error
+		conn, err = net.Dial("tcp", "rps.vhenne.de:6000")
+		if err != nil {
+			fmt.Printf("could not connect to server %v\n", err)
 			return
 		}
+		//login
+		_, err = fmt.Fprintf(conn, "login %s %s\n", args[0], args[1])
 		if err != nil {
-			fmt.Printf("could not read response from server %v\n", err)
+			fmt.Printf("could not write to connection %v\n", err)
 			return
 		}
-		if message[0] != '{' {
-			fmt.Println(message)
-			continue
-		}
-		g := &Game{}
-		err = json.Unmarshal([]byte(message), g)
-		if err != nil {
-			fmt.Printf("could not unmarshall data %v\n", err)
-		}
-		action := g.bestAction()
 
-		if action.score <= 0 {
-			sendNOP()
-			continue
-		}
+		reader := bufio.NewReader(conn)
+		for {
+			//read
+			m, err := reader.ReadString('\n')
+			if err == io.EOF {
+				break
+			}
+			if err != nil {
+				fmt.Printf("could not read response from server %v\n", err)
+				return
+			}
+			if strings.HasPrefix(m, "calculating round") || strings.HasPrefix(m, "command received. waiting for other player...") || strings.HasPrefix(m, "waiting for you command") {
+				continue
+			}
 
-		sendGameCommand(action.source, action.target, action.fleet0, action.fleet1, action.fleet2)
+			if m[0] != '{' {
+				fmt.Println(m)
+				continue
+			}
+			g := &Game{}
+			err = json.Unmarshal([]byte(m), g)
+			if err != nil {
+				fmt.Printf("could not unmarshall data %v\n", err)
+			}
+
+			action := g.bestAction()
+
+			if action.score <= 0 {
+				sendNOP()
+				continue
+			}
+
+			sendGameCommand(action.source, action.target, action.fleet0, action.fleet1, action.fleet2)
+		}
 	}
 }
 
 func sendGameCommand(source, target, fleet0, fleet1, fleet2 int) {
 	command := fmt.Sprintf("send %d %d %d %d %d\n", source, target, fleet0, fleet1, fleet2)
-	fmt.Println(command)
+	//fmt.Println(command)
 	_, err := fmt.Fprintf(conn, command)
 	if err != nil {
 		fmt.Printf("could not write to connection %v\n", err)
@@ -264,7 +270,8 @@ func sendGameCommand(source, target, fleet0, fleet1, fleet2 int) {
 }
 
 func sendNOP() {
-	_, err := fmt.Fprintf(conn, "nop")
+	fmt.Println("send nop")
+	_, err := fmt.Fprint(conn, "nop\n")
 	if err != nil {
 		fmt.Printf("could not write to connection %v\n", err)
 		return
@@ -276,6 +283,25 @@ func (g *Game) getIDs() (int, int) {
 		return g.Players[0].Id, g.Players[1].Id
 	}
 	return g.Players[1].Id, g.Players[0].Id
+}
+
+func (g *Game) getOwnPlanets() []Planet {
+	me, _ := g.getIDs()
+	return g.getPlanets(me)
+}
+
+func (g *Game) biggestOwnPlanet() (int, int) {
+	var id int
+	var fleet int
+	ownPlanets := g.getOwnPlanets()
+	for _, p := range ownPlanets {
+		sum := p.Ships[0] + p.Ships[1] + p.Ships[2]
+		if sum > fleet {
+			id = p.Id
+			fleet = sum
+		}
+	}
+	return id, fleet
 }
 
 func (g *Game) getPlanets(playerID int) []Planet {
