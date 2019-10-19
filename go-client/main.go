@@ -188,3 +188,16 @@ func getFleets(playerID int, fleets []Fleet) []Fleet {
 	}
 	return res
 }
+
+func getPlanetByID(planetID int, planets []Planet) *Planet {
+	if planetID == -1 {
+		return nil
+	}
+	var res Planet
+	for _, planet := range planets {
+		if planet.Id == planetID {
+			res = planet
+		}
+	}
+	return &res
+}
