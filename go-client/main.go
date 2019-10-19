@@ -131,3 +131,13 @@ func getPlanets(playerID int, planets []Planet) []Planet {
 	}
 	return res
 }
+
+func getFleets(playerID int, fleets []Fleet) []Fleet {
+	res := make([]Fleet, 0)
+	for _, fleet := range fleets {
+		if fleet.OwnerID == playerID {
+			res = append(res, fleet)
+		}
+	}
+	return res
+}
