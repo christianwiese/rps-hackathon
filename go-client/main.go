@@ -159,7 +159,7 @@ func attack(att [3]float64) [3]float64 {
 	return def
 }
 
-func (g *Game) bestAction() *action {
+func (g *Game) bestAction() action {
 	myId, _ := g.getIDs()
 	var actions []action
 	for _, p1 := range g.Planets {
@@ -189,7 +189,7 @@ func (g *Game) bestAction() *action {
 			action = a
 		}
 	}
-	return &action
+	return action
 }
 
 func distance(p1 Planet, p2 Planet) int {
@@ -251,7 +251,7 @@ func main() {
 			action := g.bestAction()
 			//fmt.Println("best action", action)
 
-			if action.score <= -100000000 {
+			if action.score <= -10 {
 				sendNOP()
 				continue
 			}
