@@ -64,7 +64,7 @@ func (g *Game) score() int {
 }
 
 func (g *Game) biggestPlanet() (int, int) {
-	return 0,0
+	return 0, 0
 }
 func (g *Game) nearestPlanet() (int, int) {
 	myId, _ := g.getIDs()
@@ -131,14 +131,10 @@ func main() {
 			continue
 		}
 		g := &Game{}
-		fmt.Println(message)
 		err = json.Unmarshal([]byte(message), g)
 		if err != nil {
 			fmt.Printf("could not unmarshall data %v\n", err)
 		}
-
-		//myID, theirID := g.getIDs()
-
 		source, dest := g.nearestPlanet()
 
 		if source == -1 || dest == -1 {
