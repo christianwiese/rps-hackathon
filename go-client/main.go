@@ -113,34 +113,34 @@ func (p *Planet) getShipsAfter(time int) [3]int {
 }
 
 func fight(_att [3]int, _def [3]int) int {
-	att := [3]int{_att[0], _att[1], _att[2]}
-	def := [3]int{_def[0], _def[1], _def[2]}
+	att := [3]float64{float64(_att[0]), float64(_att[1]), float64(_att[2])}
+	def := [3]float64{float64(_def[0]), float64(_def[1]), float64(_def[2])}
 
 	for {
 		s1 := att[0] + att[1] + att[2]
 		s2 := def[0] + def[1] + def[2]
-		if s1 == 0 || s2 == 0 {
-			return s1 - s2
+		fmt.Println("fighting...", s1, s2)
+		if s1 <= 0 || s2 <= 0 {
+			return int(s1 - s2)
 		}
 		deltDamage := attack(att)
 		recDamage := attack(def)
 
 		for i, _ := range deltDamage {
-			deltDamage[i] += def[i]
-			recDamage[i] += att[i]
-
+			def[i] = math.Max(def[i]+deltDamage[i], 0)
+			att[i] = math.Max(att[i]+recDamage[i], 0)
 		}
 	}
 }
 
-func attack(att [3]int) [3]int {
-	def := [3]int{}
+func attack(att [3]float64) [3]float64 {
+	def := [3]float64{}
 	for dType, d := range def {
 		for aType, a := range att {
 			if a == 0 {
 				continue
 			}
-			mult, abs := 0, 0
+			mult, abs := 0.0, 0.0
 			if aType == dType {
 				mult = 0.1
 				abs = 1
@@ -164,7 +164,7 @@ func attack(att [3]int) [3]int {
 	return def
 }
 
-func (g *Game) actions() (int, int) {
+func (g *Game) bestAction() *action {
 	myId, _ := g.getIDs()
 	var actions []action
 	for _, p1 := range g.Planets {
@@ -187,7 +187,13 @@ func (g *Game) actions() (int, int) {
 			})
 		}
 	}
-	return 0, 0
+	var action action
+	for _, a := range actions {
+		if a.score > action.score {
+			action = a
+		}
+	}
+	return &action
 }
 
 func distance(p1 Planet, p2 Planet) int {
@@ -236,15 +242,14 @@ func main() {
 		if err != nil {
 			fmt.Printf("could not unmarshall data %v\n", err)
 		}
-		source, dest := g.nearestPlanet()
+		action := g.bestAction()
 
-		if source == -1 || dest == -1 {
+		if action.score <= 0 {
 			sendNOP()
 			continue
 		}
 
-		srcp := g.getPlanetByID(source)
-		sendGameCommand(source, dest, srcp.Ships[0], srcp.Ships[1], srcp.Ships[2])
+		sendGameCommand(action.source, action.target, action.fleet0, action.fleet1, action.fleet2)
 	}
 }
 
