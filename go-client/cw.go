@@ -1,8 +1,39 @@
 package main
 
-func (g *Game) cwBestAction() action {
+import (
+	"sort"
+)
+
+type byScore []cwAction
+
+func (a byScore) Len() int      { return len(a) }
+func (a byScore) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
+func (a byScore) Less(i, j int) bool {
+	distI := distance(a[i].source, a[i].target)
+	distJ := distance(a[j].source, a[j].target)
+	prodI := Sum(a[i].target.Production)
+	prodJ := Sum(a[j].target.Production)
+	if a[i].win == a[j].win {
+		if prodI == prodJ {
+			return distI > distJ
+		}
+		return prodI < prodJ
+	}
+	return a[i].win < a[j].win
+}
+
+type cwAction struct {
+	win    int
+	source Planet
+	target Planet
+	fleet0 int
+	fleet1 int
+	fleet2 int
+}
+
+func (g *Game) cwBestAction() (cwAction, bool) {
 	myId, _ := g.getIDs()
-	var actions []action
+	var actions byScore
 	for _, my := range g.Planets {
 		if my.OwnerID != myId {
 			continue
@@ -13,40 +44,29 @@ func (g *Game) cwBestAction() action {
 			}
 			d := distance(my, other)
 
-			var score int
-			//sc, _ := cwFight(my.Ships, other.getShipsAfter(d))
-			//fmt.Println("score", sc)
-			win1 := my.Ships[0] - other.getShipsAfter(d)[1]
-			win2 := my.Ships[1] - other.getShipsAfter(d)[2]
-			win3 := my.Ships[2] - other.getShipsAfter(d)[0]
-
-			if win1 > 0 {
-				score += win1
-			}
-			if win2 > 0 {
-				score += win2
-			}
-			if win3 > 0 {
-				score += win3
+			result := fight(my.Ships, other.getShipsAfter(d))
+			if result < 0 {
+				continue
 			}
 
-			actions = append(actions, action{
-				score:  score,
-				source: my.Id,
-				target: other.Id,
-				fleet0: win1,
-				fleet1: win2,
-				fleet2: win3,
+			actions = append(actions, cwAction{
+				win:    1,
+				source: my,
+				target: other,
+				fleet0: my.Ships[0],
+				fleet1: my.Ships[1],
+				fleet2: my.Ships[2],
 			})
 		}
 	}
-	action := action{score: -1000000000}
-	for _, a := range actions {
-		if a.score > action.score {
-			action = a
-		}
+
+	if len(actions) == 0 {
+		return cwAction{}, false
 	}
-	return action
+
+	sort.Sort(actions)
+
+	return actions[len(actions)-1], true
 }
 
 //func cwFight(_att [3]int, _def [3]int) (int, [3]int) {
@@ -69,3 +89,21 @@ func (g *Game) cwBestAction() action {
 //		}
 //	}
 //}
+
+func Max(x, y int) int {
+	if x < y {
+		return y
+	}
+	return x
+}
+
+func Min(x, y int) int {
+	if x > y {
+		return y
+	}
+	return x
+}
+
+func Sum(x [3]int) int {
+	return x[0] + x[1] + x[2]
+}

@@ -65,12 +65,6 @@ func (g *Game) score() int {
 	return score
 }
 
-type byScore []action
-
-func (a byScore) Len() int           { return len(a) }
-func (a byScore) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
-func (a byScore) Less(i, j int) bool { return a[i].score < a[j].score }
-
 type action struct {
 	score  int
 	source int
@@ -185,13 +179,13 @@ func (g *Game) bestAction() action {
 
 			send := [3]int{}
 			for s0 := 1; s0 < 1000; s0++ {
-				r := rand.Intn(after[0] + after[1] + after[2]+1)
+				r := rand.Intn(after[0] + after[1] + after[2] + 1)
 				if r <= after[0] {
-					send[2] +=rand.Intn(10)
+					send[2] += rand.Intn(10)
 				} else if r <= after[0]+after[1] {
-					send[0] +=rand.Intn(10)
+					send[0] += rand.Intn(10)
 				} else {
-					send[1] +=rand.Intn(10)
+					send[1] += rand.Intn(10)
 				}
 				sc := fight(send, after)
 				if sc > 0 {
@@ -273,16 +267,16 @@ func main() {
 			if err != nil {
 				fmt.Printf("could not unmarshall data %v\n", err)
 			}
-			if g.GameOver {
-				break
+
+			action, ok := g.cwBestAction()
+
+			if !ok {
+				sendNOP()
+				continue
 			}
 
-			action := g.bestAction()
-			fmt.Printf("best action %+v \t| ", action)
-
-			sendGameCommand(action.source, action.target, action.fleet0, action.fleet1, action.fleet2)
+			sendGameCommand(action.source.Id, action.target.Id, action.fleet0, action.fleet1, action.fleet2)
 		}
-		//break
 	}
 }
 
@@ -382,4 +376,14 @@ func (g *Game) alreadySent(my int, other int) int {
 		}
 	}
 	return c
+}
+
+func (g *Game) getMyFleetsForTarget(target int) []*Fleet {
+	var fleet []*Fleet
+	me, _ := g.getIDs()
+	fleets := g.getFleets(me)
+	for _, f := range fleets {
+		fleet = append(fleet, &f)
+	}
+	return fleet
 }
