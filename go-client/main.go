@@ -147,7 +147,9 @@ func main() {
 }
 
 func sendGameCommand(source int, target int, fleet []int) {
-	_, err := fmt.Fprintf(conn, fmt.Sprintf("send %d %d %d %d %d\n", source, target, fleet[0], fleet[1], fleet[2]))
+	command := fmt.Sprintf("send %d %d %d %d %d\n", source, target, fleet[0], fleet[1], fleet[2])
+	fmt.Println(command)
+	_, err := fmt.Fprintf(conn, command)
 	if err != nil {
 		fmt.Printf("could not write to connection %v\n", err)
 		return
