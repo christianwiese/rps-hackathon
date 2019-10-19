@@ -63,9 +63,9 @@ func (g *Game) score() int {
 	return score
 }
 
-func (g *Game) nearestNeutral() (*Planet, *Planet) {
+func (g *Game) nearestPlanet() (int, int) {
 	myId, _ := getIDs(g.Players)
-	var src, dst *Planet
+	var src, dst int
 	mind := 1000000000
 	for _, p := range g.Planets {
 		if p.OwnerID != myId {
@@ -78,8 +78,8 @@ func (g *Game) nearestNeutral() (*Planet, *Planet) {
 			d := distance(p, p2)
 			if d < mind {
 				mind = d
-				src = &p
-				dst = &p2
+				src = p.Id
+				dst = p2.Id
 			}
 		}
 	}
@@ -135,19 +135,20 @@ func main() {
 		}
 
 		//myID, theirID := getIDs(g.Players)
-		source, dest := g.nearestNeutral()
 
-		if source == nil || dest == nil {
+		source, dest := g.nearestPlanet()
+
+		if source == -1 || dest == -1 {
 			sendNOP()
 			continue
 		}
 
-		sendGameCommand(source.Id, dest.Id, source.Ships)
+		sendGameCommand(source, dest, 1, 1, 1)
 	}
 }
 
-func sendGameCommand(source int, target int, fleet []int) {
-	_, err := fmt.Fprintf(conn, fmt.Sprintf("send %d %d %d %d %d\n", source, target, fleet[0], fleet[1], fleet[2]))
+func sendGameCommand(source int, target int, fleet0 int, fleet1 int, fleet2 int) {
+	_, err := fmt.Fprintf(conn, fmt.Sprintf("send %d %d %d %d %d\n", source, target, fleet0, fleet1, fleet2))
 	if err != nil {
 		fmt.Printf("could not write to connection %v\n", err)
 		return
