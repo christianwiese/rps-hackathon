@@ -123,21 +123,35 @@ func main() {
 			fmt.Println(message)
 			continue
 		}
-		gameData := &Game{}
+		g := &Game{}
 		fmt.Println(message)
-		err = json.Unmarshal([]byte(message), gameData)
+		err = json.Unmarshal([]byte(message), g)
 		if err != nil {
 			fmt.Printf("could not unmarshall data %v\n", err)
 		}
-		//fmt.Printf("game state: %+v", gameData)
-		////////////////
-		myID, theirID := getIDs(gameData.Players)
-		fmt.Println(myID, theirID)
+
+		//myID, theirID := getIDs(gameData.Players)
+		source, dest := g.nearestNeutral()
+
+		if source == nil || dest == nil {
+			sendNOP(conn)
+			continue
+		}
+
+		sendGameCommand(conn, source.Id, dest.Id, source.Ships)
 	}
 }
 
 func sendGameCommand(conn net.Conn, source int, target int, fleet []int) {
 	_, err := fmt.Fprintf(conn, fmt.Sprintf("send %d %d %d %d %d\n", source, target, fleet[0], fleet[1], fleet[2]))
+	if err != nil {
+		fmt.Printf("could not write to connection %v\n", err)
+		return
+	}
+}
+
+func sendNOP(conn net.Conn) {
+	_, err := fmt.Fprintf(conn, "nop")
 	if err != nil {
 		fmt.Printf("could not write to connection %v\n", err)
 		return
