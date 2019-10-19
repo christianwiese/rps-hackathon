@@ -81,6 +81,10 @@ func main() {
 		if err != nil {
 			fmt.Printf("could not unmarshall data %v\n", err)
 		}
+		//fmt.Printf("game state: %+v", gameData)
+		////////////////
+		myID := getMyID(gameData.Players)
+		fmt.Println(myID)
 	}
 }
 
@@ -90,4 +94,11 @@ func sendGameCommand(conn net.Conn, source int, target int, fleet []int) {
 		fmt.Printf("could not write to connection %v\n", err)
 		return
 	}
+}
+
+func getMyID(players []Player) int {
+	if players[0].Itsme {
+		return players[0].Id
+	}
+	return players[1].Id
 }
