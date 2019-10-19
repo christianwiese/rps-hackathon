@@ -63,6 +63,11 @@ func (g *Game) score() int {
 	return score
 }
 
+type byScore []action
+func (a byScore) Len() int           { return len(a) }
+func (a byScore) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+func (a byScore) Less(i, j int) bool { return a[i].score < a[j].score }
+
 type action struct {
 	score  int
 	source int
