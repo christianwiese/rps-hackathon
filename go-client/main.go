@@ -51,7 +51,7 @@ func (g *Game) score() int {
 		return 0
 	}
 	score := 0
-	myId, otherId := getIDs(g.Players)
+	myId, otherId := g.getIDs()
 
 	for _, planet := range getPlanets(myId, g.Planets) {
 		score += (planet.Production[0] + planet.Production[1] + planet.Production[2])
@@ -63,8 +63,11 @@ func (g *Game) score() int {
 	return score
 }
 
+func (g *Game) biggestPlanet() (int, int) {
+	return 0,0
+}
 func (g *Game) nearestPlanet() (int, int) {
-	myId, _ := getIDs(g.Players)
+	myId, _ := g.getIDs()
 	var src, dst int
 	mind := 1000000000
 	for _, p := range g.Planets {
@@ -134,7 +137,7 @@ func main() {
 			fmt.Printf("could not unmarshall data %v\n", err)
 		}
 
-		//myID, theirID := getIDs(g.Players)
+		//myID, theirID := g.getIDs()
 
 		source, dest := g.nearestPlanet()
 
@@ -143,7 +146,7 @@ func main() {
 			continue
 		}
 
-		srcp := getPlanetByID(source, g.Planets)
+		srcp := g.getPlanetByID(source)
 		sendGameCommand(source, dest, srcp.Ships[0], srcp.Ships[1], srcp.Ships[2])
 	}
 }
@@ -166,11 +169,11 @@ func sendNOP() {
 	}
 }
 
-func getIDs(players []Player) (int, int) {
-	if players[0].Itsme {
-		return players[0].Id, players[1].Id
+func (g *Game) getIDs() (int, int) {
+	if g.Players[0].Itsme {
+		return g.Players[0].Id, g.Players[1].Id
 	}
-	return players[1].Id, players[0].Id
+	return g.Players[1].Id, g.Players[0].Id
 }
 
 func getPlanets(playerID int, planets []Planet) []Planet {
@@ -183,9 +186,9 @@ func getPlanets(playerID int, planets []Planet) []Planet {
 	return res
 }
 
-func getFleets(playerID int, fleets []Fleet) []Fleet {
+func (g *Game) getFleets(playerID int) []Fleet {
 	res := make([]Fleet, 0)
-	for _, fleet := range fleets {
+	for _, fleet := range g.Fleets {
 		if fleet.OwnerID == playerID {
 			res = append(res, fleet)
 		}
@@ -193,12 +196,12 @@ func getFleets(playerID int, fleets []Fleet) []Fleet {
 	return res
 }
 
-func getPlanetByID(planetID int, planets []Planet) *Planet {
+func (g *Game) getPlanetByID(planetID int) *Planet {
 	if planetID == -1 {
 		return nil
 	}
 	var res Planet
-	for _, planet := range planets {
+	for _, planet := range g.Planets {
 		if planet.Id == planetID {
 			res = planet
 		}
