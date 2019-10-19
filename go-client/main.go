@@ -53,10 +53,10 @@ func (g *Game) score() int {
 	score := 0
 	myId, otherId := g.getIDs()
 
-	for _, planet := range getPlanets(myId, g.Planets) {
+	for _, planet := range g.getPlanets(myId) {
 		score += (planet.Production[0] + planet.Production[1] + planet.Production[2])
 	}
-	for _, planet := range getPlanets(otherId, g.Planets) {
+	for _, planet := range g.getPlanets(otherId) {
 		score -= (planet.Production[0] + planet.Production[1] + planet.Production[2])
 	}
 
@@ -66,9 +66,10 @@ func (g *Game) score() int {
 func (g *Game) biggestPlanet() (int, int) {
 	return 0, 0
 }
+
 func (g *Game) nearestPlanet() (int, int) {
 	myId, _ := g.getIDs()
-	var src, dst int
+	var src, dst = -1, -1
 	mind := 1000000000
 	for _, p := range g.Planets {
 		if p.OwnerID != myId {
@@ -172,9 +173,9 @@ func (g *Game) getIDs() (int, int) {
 	return g.Players[1].Id, g.Players[0].Id
 }
 
-func getPlanets(playerID int, planets []Planet) []Planet {
+func (g *Game) getPlanets(playerID int) []Planet {
 	res := make([]Planet, 0)
-	for _, planet := range planets {
+	for _, planet := range g.Planets {
 		if planet.OwnerID == playerID {
 			res = append(res, planet)
 		}
