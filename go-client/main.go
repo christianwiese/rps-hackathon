@@ -101,6 +101,9 @@ func (g *Game) nearestPlanet() (int, int) {
 }
 
 func (p *Planet) getShipsAfter(time int) [3]int {
+	if p.OwnerID == 0 {
+		return p.Ships
+	}
 	return [3]int{
 		p.Ships[0] + time*p.Production[0],
 		p.Ships[1] + time*p.Production[1],
@@ -175,12 +178,10 @@ func (g *Game) bestAction() action {
 			if other.OwnerID == myId {
 				continue
 			}
-			//if c := g.alreadySent(my.Id, other.Id); c > 2 {
-			//	continue
-			//}
-
-			//d := distance(my, other)
-			after := other.Ships
+			c := g.alreadySent(my.Id, other.Id)
+			d := distance(my, other)
+			after := other.getShipsAfter(d)
+			val := (other.Production[0]) + (other.Production[1]) + (other.Production[2])
 
 			send := [3]int{}
 			for s0 := 1; s0 < 1000; s0++ {
@@ -196,7 +197,7 @@ func (g *Game) bestAction() action {
 				if sc > 0 {
 					//fmt.Println("score", sc)
 					actions = append(actions, action{
-						score:  sc,
+						score:  val - d - c + rand.Intn(2),
 						source: my.Id,
 						target: other.Id,
 						fleet0: send[0] + 1,
@@ -277,11 +278,11 @@ func main() {
 			}
 
 			action := g.bestAction()
-			fmt.Printf("best action %+v | ", action)
+			fmt.Printf("best action %+v \t| ", action)
 
 			sendGameCommand(action.source, action.target, action.fleet0, action.fleet1, action.fleet2)
 		}
-		break
+		//break
 	}
 }
 
