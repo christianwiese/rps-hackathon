@@ -6,11 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net"
-)
-
-const (
-	user = "cw-test2"
-	pass = "awesomepassword"
+	"os"
 )
 
 type Fleet struct {
@@ -49,6 +45,11 @@ type Game struct {
 
 func main() {
 	fmt.Println("starting rps client")
+	args := os.Args[1:]
+	if len(args) != 2 {
+		fmt.Println("Please provide username and password")
+		return
+	}
 
 	conn, err := net.Dial("tcp", "rps.vhenne.de:6000")
 	if err != nil {
@@ -56,7 +57,7 @@ func main() {
 		return
 	}
 	//login
-	_, err = fmt.Fprintf(conn, fmt.Sprintf("login %s %s\n", user, pass))
+	_, err = fmt.Fprintf(conn, fmt.Sprintf("login %s %s\n", args[0], args[1]))
 	if err != nil {
 		fmt.Printf("could not write to connection %v\n", err)
 		return
