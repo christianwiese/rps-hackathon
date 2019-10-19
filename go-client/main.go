@@ -43,6 +43,24 @@ type Game struct {
 	Planets   []Planet `json:"planets"`
 }
 
+func (g *Game) score() int {
+	if g.GameOver {
+		return 0
+	}
+	score := 0
+	myId, otherId := getIDs(g.Players)
+	for _, p := range g.Planets {
+		var mult = 0
+		if p.OwnerID == otherId {
+			mult = -1
+		} else if p.OwnerID == myId {
+			mult = 1
+		}
+		score += (p.Production[0] + p.Production[1] + p.Production[2]) * mult
+	}
+	return score
+}
+
 func main() {
 	fmt.Println("starting rps client")
 	args := os.Args[1:]
@@ -57,7 +75,7 @@ func main() {
 		return
 	}
 	//login
-	_, err = fmt.Fprintf(conn, fmt.Sprintf("login %s %s\n", args[0], args[1]))
+	_, err = fmt.Fprintf(conn, "login %s %s\n", args[0], args[1])
 	if err != nil {
 		fmt.Printf("could not write to connection %v\n", err)
 		return
