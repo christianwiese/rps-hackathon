@@ -44,6 +44,8 @@ type Game struct {
 	Planets   []Planet `json:"planets"`
 }
 
+var conn net.Conn
+
 func (g *Game) score() int {
 	if g.GameOver {
 		return 0
@@ -98,7 +100,8 @@ func main() {
 		return
 	}
 
-	conn, err := net.Dial("tcp", "rps.vhenne.de:6000")
+	var err error
+	conn, err = net.Dial("tcp", "rps.vhenne.de:6000")
 	if err != nil {
 		fmt.Printf("could not connect to server %v\n", err)
 		return
@@ -109,9 +112,10 @@ func main() {
 		fmt.Printf("could not write to connection %v\n", err)
 		return
 	}
+	reader := bufio.NewReader(conn)
 	for {
 		//read
-		message, err := bufio.NewReader(conn).ReadString('\n')
+		message, err := reader.ReadString('\n')
 		if err == io.EOF {
 			return
 		}
@@ -130,19 +134,19 @@ func main() {
 			fmt.Printf("could not unmarshall data %v\n", err)
 		}
 
-		//myID, theirID := getIDs(gameData.Players)
+		//myID, theirID := getIDs(g.Players)
 		source, dest := g.nearestNeutral()
 
 		if source == nil || dest == nil {
-			sendNOP(conn)
+			sendNOP()
 			continue
 		}
 
-		sendGameCommand(conn, source.Id, dest.Id, source.Ships)
+		sendGameCommand(source.Id, dest.Id, source.Ships)
 	}
 }
 
-func sendGameCommand(conn net.Conn, source int, target int, fleet []int) {
+func sendGameCommand(source int, target int, fleet []int) {
 	_, err := fmt.Fprintf(conn, fmt.Sprintf("send %d %d %d %d %d\n", source, target, fleet[0], fleet[1], fleet[2]))
 	if err != nil {
 		fmt.Printf("could not write to connection %v\n", err)
@@ -150,7 +154,7 @@ func sendGameCommand(conn net.Conn, source int, target int, fleet []int) {
 	}
 }
 
-func sendNOP(conn net.Conn) {
+func sendNOP() {
 	_, err := fmt.Fprintf(conn, "nop")
 	if err != nil {
 		fmt.Printf("could not write to connection %v\n", err)
