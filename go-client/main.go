@@ -63,6 +63,15 @@ func (g *Game) score() int {
 	return score
 }
 
+type action struct {
+	score  int
+	source int
+	target int
+	fleet0 int
+	fleet1 int
+	fleet2 int
+}
+
 func (g *Game) biggestPlanet() (int, int) {
 	return 0, 0
 }
@@ -88,6 +97,55 @@ func (g *Game) nearestPlanet() (int, int) {
 		}
 	}
 	return src, dst
+}
+
+func (p *Planet) getShipsAfter(time int) [3]int {
+	return [3]int{
+		p.Ships[0] + time*p.Production[0],
+		p.Ships[1] + time*p.Production[1],
+		p.Ships[2] + time*p.Production[2],
+	}
+}
+
+func conquer(att [3]int, def [3]int) int {
+	for ai, a := range att {
+		for di, d := range def {
+			mult, abs := 0
+			if ai == di {
+				mult = 0.1
+				abs = 1
+			} else if (ai-di+3)%3 == 1 {
+				mult = 0.25
+				abs = 2
+			} else if (ai-di+3)%3 == 2 {
+				mult = 0.01
+				abs = 1
+			} else {
+				panic("impossible!!")
+			}
+
+		}
+	}
+}
+
+func (g *Game) actions() (int, int) {
+	myId, _ := g.getIDs()
+	for _, p1 := range g.Planets {
+		if p1.OwnerID != myId {
+			continue
+		}
+		for _, p2 := range g.Planets {
+			if p2.OwnerID == myId {
+				continue
+			}
+			d := distance(p1, p2)
+			p1.Ships
+
+			p2.getShipsAfter(d)
+
+		}
+	}
+	return 0, 0
 }
 
 func distance(p1 Planet, p2 Planet) int {
