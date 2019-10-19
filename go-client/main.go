@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"math"
+	"math/rand"
 	"net"
 	"os"
 	"strings"
@@ -100,9 +101,6 @@ func (g *Game) nearestPlanet() (int, int) {
 }
 
 func (p *Planet) getShipsAfter(time int) [3]int {
-	if p.OwnerID == 0 {
-		return p.Ships
-	}
 	return [3]int{
 		p.Ships[0] + time*p.Production[0],
 		p.Ships[1] + time*p.Production[1],
@@ -114,6 +112,8 @@ func fight(_att [3]int, _def [3]int) int {
 	att := [3]float64{float64(_att[0]), float64(_att[1]), float64(_att[2])}
 	def := [3]float64{float64(_def[0]), float64(_def[1]), float64(_def[2])}
 
+	sc := 0.0
+
 	for {
 		s1 := att[0] + att[1] + att[2]
 		s2 := def[0] + def[1] + def[2]
@@ -123,6 +123,8 @@ func fight(_att [3]int, _def [3]int) int {
 		}
 		deltDamage := attack(att)
 		recDamage := attack(def)
+
+		sc += deltDamage[0] + deltDamage[1] + deltDamage[2] - recDamage[0] - recDamage[1] - recDamage[2]
 
 		for i, _ := range deltDamage {
 			def[i] = math.Max(def[i]+deltDamage[i], 0)
@@ -165,25 +167,45 @@ func attack(att [3]float64) [3]float64 {
 func (g *Game) bestAction() action {
 	myId, _ := g.getIDs()
 	var actions []action
-	for _, p1 := range g.Planets {
-		if p1.OwnerID != myId {
+	for _, my := range g.Planets {
+		if my.OwnerID != myId {
 			continue
 		}
-		for _, p2 := range g.Planets {
-			if p2.OwnerID == myId {
+		for _, other := range g.Planets {
+			if other.OwnerID == myId {
 				continue
 			}
-			d := distance(p1, p2)
-			sc := fight(p1.Ships, p2.getShipsAfter(d))
-			//fmt.Println("score", sc)
-			actions = append(actions, action{
-				score:  sc,
-				source: p1.Id,
-				target: p2.Id,
-				fleet0: p1.Ships[0],
-				fleet1: p1.Ships[1],
-				fleet2: p1.Ships[2],
-			})
+			//if c := g.alreadySent(my.Id, other.Id); c > 2 {
+			//	continue
+			//}
+
+			//d := distance(my, other)
+			after := other.Ships
+
+			send := [3]int{}
+			for s0 := 1; s0 < 1000; s0++ {
+				r := rand.Intn(after[0] + after[1] + after[2]+1)
+				if r <= after[0] {
+					send[2] +=rand.Intn(10)
+				} else if r <= after[0]+after[1] {
+					send[0] +=rand.Intn(10)
+				} else {
+					send[1] +=rand.Intn(10)
+				}
+				sc := fight(send, after)
+				if sc > 0 {
+					//fmt.Println("score", sc)
+					actions = append(actions, action{
+						score:  sc,
+						source: my.Id,
+						target: other.Id,
+						fleet0: send[0] + 1,
+						fleet1: send[1] + 1,
+						fleet2: send[2] + 1,
+					})
+					break
+				}
+			}
 		}
 	}
 	action := action{score: -1000000000}
@@ -250,23 +272,31 @@ func main() {
 			if err != nil {
 				fmt.Printf("could not unmarshall data %v\n", err)
 			}
-
-			action := g.cwBestAction()
-			//fmt.Println("best action", action)
-
-			if action.score <= -10 {
-				sendNOP()
-				continue
+			if g.GameOver {
+				break
 			}
+
+			action := g.bestAction()
+			fmt.Printf("best action %+v | ", action)
 
 			sendGameCommand(action.source, action.target, action.fleet0, action.fleet1, action.fleet2)
 		}
+		break
 	}
 }
 
 func sendGameCommand(source, target, fleet0, fleet1, fleet2 int) {
+	if fleet0 < 0 {
+		fleet0 = 0
+	}
+	if fleet1 < 0 {
+		fleet1 = 0
+	}
+	if fleet2 < 0 {
+		fleet2 = 0
+	}
 	command := fmt.Sprintf("send %d %d %d %d %d\n", source, target, fleet0, fleet1, fleet2)
-	fmt.Println(command)
+	fmt.Print(command)
 	_, err := fmt.Fprintf(conn, command)
 	if err != nil {
 		fmt.Printf("could not write to connection %v\n", err)
@@ -340,4 +370,15 @@ func (g *Game) getPlanetByID(planetID int) *Planet {
 		}
 	}
 	return &res
+}
+
+func (g *Game) alreadySent(my int, other int) int {
+	myid, _ := g.getIDs()
+	c := 0
+	for _, f := range g.Fleets {
+		if f.OwnerID == myid && f.Origin == my && f.Target == other {
+			c++
+		}
+	}
+	return c
 }
