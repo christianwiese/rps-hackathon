@@ -15,7 +15,7 @@ type Fleet struct {
 	OwnerID int   `json:"owner_id"`
 	Origin  int   `json:"origin"`
 	Target  int   `json:"target"`
-	Ships   []int `json:"ships"`
+	Ships   [3]int `json:"ships"`
 	Eta     int   `json:"eta"`
 }
 
@@ -30,8 +30,8 @@ type Planet struct {
 	OwnerID    int   `json:"owner_id"`
 	X          int   `json:"x"`
 	Y          int   `json:"y"`
-	Ships      []int `json:"ships"`
-	Production []int `json:"production"`
+	Ships      [3]int `json:"ships"`
+	Production [3]int `json:"production"`
 }
 
 type Game struct {
@@ -112,29 +112,61 @@ func (p *Planet) getShipsAfter(time int) [3]int {
 	}
 }
 
-func conquer(att [3]int, def [3]int) int {
-	for ai, a := range att {
-		for di, d := range def {
-			mult, abs := 0
-			if ai == di {
-				mult = 0.1
-				abs = 1
-			} else if (ai-di+3)%3 == 1 {
-				mult = 0.25
-				abs = 2
-			} else if (ai-di+3)%3 == 2 {
-				mult = 0.01
-				abs = 1
-			} else {
-				panic("impossible!!")
-			}
+func fight(_att [3]int, _def [3]int) int {
+	att := [3]int{_att[0], _att[1], _att[2]}
+	def := [3]int{_def[0], _def[1], _def[2]}
+
+	for {
+		s1 := att[0] + att[1] + att[2]
+		s2 := def[0] + def[1] + def[2]
+		if s1 == 0 || s2 == 0 {
+			return s1 - s2
+		}
+		deltDamage := attack(att)
+		recDamage := attack(def)
+
+		for i, _ := range deltDamage {
+			deltDamage[i] += def[i]
+			recDamage[i] += att[i]
 
 		}
 	}
 }
 
+func attack(att [3]int) [3]int {
+	def := [3]int{}
+	for dType, d := range def {
+		for aType, a := range att {
+			if a == 0 {
+				continue
+			}
+			mult, abs := 0, 0
+			if aType == dType {
+				mult = 0.1
+				abs = 1
+			} else if (dType-aType+3)%3 == 1 {
+				mult = 0.25
+				abs = 2
+			} else if (dType-aType+3)%3 == 2 {
+				mult = 0.01
+				abs = 1
+			} else {
+				panic("impossible!!")
+			}
+			if a*mult < abs {
+				d -= abs
+			} else {
+				d -= a * mult
+			}
+		}
+		def[dType] = d
+	}
+	return def
+}
+
 func (g *Game) actions() (int, int) {
 	myId, _ := g.getIDs()
+	var actions []action
 	for _, p1 := range g.Planets {
 		if p1.OwnerID != myId {
 			continue
@@ -144,10 +176,15 @@ func (g *Game) actions() (int, int) {
 				continue
 			}
 			d := distance(p1, p2)
-			p1.Ships
-
-			p2.getShipsAfter(d)
-
+			sc := fight(p1.Ships, p2.getShipsAfter(d))
+			actions = append(actions, action{
+				score:  sc,
+				source: p1.Id,
+				target: p2.Id,
+				fleet0: p1.Ships[0],
+				fleet1: p1.Ships[1],
+				fleet2: p1.Ships[2],
+			})
 		}
 	}
 	return 0, 0
