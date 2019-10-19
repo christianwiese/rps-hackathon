@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	user = "cw-test1"
+	user = "cw-test2"
 	pass = "awesomepassword"
 )
 
@@ -52,7 +52,7 @@ func main() {
 
 	conn, err := net.Dial("tcp", "rps.vhenne.de:6000")
 	if err != nil {
-		fmt.Printf("could not connect to server %v", err)
+		fmt.Printf("could not connect to server %v\n", err)
 		return
 	}
 	//login
@@ -64,7 +64,7 @@ func main() {
 			return
 		}
 		if err != nil {
-			fmt.Printf("could not read response from server %v", err)
+			fmt.Printf("could not read response from server %v\n", err)
 			return
 		}
 		if message[0] != '{' {
@@ -77,6 +77,6 @@ func main() {
 		if err != nil {
 			fmt.Printf("could not unmarshall data %v\n", err)
 		}
-		fmt.Printf("game state: %+v", gameData)
+		fmt.Printf("game state: %+v\n", gameData)
 	}
 }
