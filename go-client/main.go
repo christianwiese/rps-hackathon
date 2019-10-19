@@ -143,7 +143,8 @@ func main() {
 			continue
 		}
 
-		sendGameCommand(source, dest, 1, 1, 1)
+		srcp := getPlanetByID(source, g.Planets)
+		sendGameCommand(source, dest, srcp.Ships[0], srcp.Ships[1], srcp.Ships[2])
 	}
 }
 
